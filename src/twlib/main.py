@@ -3,11 +3,14 @@ import logging
 import os
 import shutil
 from pathlib import Path
+from typing import Iterable
 
 import typer
 from dateutil.parser import parse
 from PIL import Image
 from pillow_heif import register_heif_opener
+
+from twlib.lib import filter_path
 
 _log = logging.getLogger(__name__)
 
@@ -132,20 +135,52 @@ def revert_lks(
     dir_: Path = typer.Argument(
         ..., help="Directory containing the lks files", exists=True
     ),
+    excludes: list[str] = typer.Option(
+        [".venv", ".git"], "-e", "--exclude", help="Exclude dirs/files"
+    ),
+    dry_run: bool = typer.Option(False, "-d", "--dry-run", help="Dry run"),
+    move: bool = typer.Option(False, "-m", "--move", help="Move instead of copy"),
 ) -> None:
     """Replace symlinks in given directory with their associated files/directories."""
     typer.echo(f"xxx {dir_}")
     _log.info(f"Reverting symlinks in {dir_}")
+
+    if dry_run:
+        _log.info("Dry run, no changes will be made")
+        func = shutil.copy
+    else:
+        if move:
+            _log.info("Move mode")
+        else:
+            _log.info("Copy mode")
+
     symlks = [f for f in dir_.rglob("*") if f.is_symlink()]
+
     for f in symlks:
+        if filter_path(f, excludes):
+            continue
         target = f.resolve()
+
+        if dry_run:
+            _log.info(f"Copy/move {target} to {f}")
+            continue
+
+        f.unlink()
         if target.is_file():
-            shutil.move(target, f)
-            _log.debug(f"Moved {target} to {f}")
+            if move:
+                shutil.move(target, f)
+                _log.debug(f"Moved {target} to {f}")
+            else:
+                shutil.copy2(target, f)
+                _log.debug(f"Copied {target} to {f}")
         elif target.is_dir():
-            f.unlink()
-            shutil.move(target, f.parent)
-            _log.debug(f"Moved {target} to {f.parent}")
+            if move:
+                shutil.move(target, f.parent)
+                _log.debug(f"Moved {target} to {f.parent}")
+            else:
+                shutil.copytree(target, f, symlinks=True)
+                _log.debug(f"Copied {target} to {f}")
+
     typer.secho(f"Reverted {len(symlks)} symlinks", fg=typer.colors.GREEN, bold=False)
 
 

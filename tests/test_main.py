@@ -9,6 +9,7 @@ from tests.conftest import REF_PROJ, TEMP_DIR, TEST_PROJ
 from twlib.environment import ROOT_DIR
 from twlib.git_open import app
 from twlib.main import _heic2img
+from twlib.lib import filter_path
 from twlib.main import app as twlib
 from twlib.main import relative, revert_lks, snake_say
 
@@ -24,9 +25,9 @@ def test_snake_say():
 class TestGitOpen:
     @pytest.mark.parametrize(
         ("path", "url"),
-        ((".", "https://github.com/sysid/py-twlib.git"),),
+        ((".", "https://github.com/sysid/twlib.git"),),
     )
-    def test_git_open(self, mocker, path, url):
+    def test_git_open_cli(self, mocker, path, url):
         mocked = mocker.patch("twlib.git_open.webbrowser.open")
         result = runner.invoke(app, path)
         print(result.stdout)
@@ -132,7 +133,27 @@ class TestRevertLks:
         shutil.rmtree(TEST_PROJ, ignore_errors=True)
         shutil.copytree(REF_PROJ, TEST_PROJ, symlinks=True)
 
-    def test_revert_lks(self):
-        revert_lks(dir_=TEST_PROJ)
+    def test_revert_lks_cli(self):
+        result = runner.invoke(twlib, ["revert-lks", "-d", "tests/resources/test_proj"])
+        print(result.stdout)
+        assert result.exit_code == 0
+
+    def test_revert_lks_copy(self):
+        revert_lks(dir_=TEST_PROJ, excludes=[".venv"], dry_run=False, move=False)
         assert (TEST_PROJ / "lks/d/.run").is_dir()
         assert (TEST_PROJ / "lks/xxx.txt").is_file()
+        assert (TEST_PROJ / ".venv/bin/python").is_symlink()  # MUST NOT be reverted
+
+        assert (TEST_PROJ / ".run").is_dir()
+        assert (TEST_PROJ / "xxx/xxx.txt").is_file()
+        assert (TEST_PROJ / ".venv/bin/python").is_symlink()  # MUST NOT be reverted
+
+    def test_revert_lks_move(self):
+        revert_lks(dir_=TEST_PROJ, excludes=[".venv"], dry_run=False, move=True)
+        assert (TEST_PROJ / "lks/d/.run").is_dir()
+        assert (TEST_PROJ / "lks/xxx.txt").is_file()
+        assert (TEST_PROJ / ".venv/bin/python").is_symlink()  # MUST NOT be reverted
+
+        assert not (TEST_PROJ / ".run").exists()
+        assert not (TEST_PROJ / "xxx/xxx.txt").exists()
+        assert (TEST_PROJ / ".venv/bin/python").is_symlink()  # MUST NOT be reverted

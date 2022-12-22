@@ -1,4 +1,7 @@
-from twlib.lib import deserialize_from_base64, serialize_to_base64
+from pathlib import Path
+
+import pytest
+from twlib.lib import deserialize_from_base64, serialize_to_base64, filter_path
 
 FILES = [
     "file1____________________________________________________________",
@@ -36,3 +39,24 @@ aARoBWUu
     obj = deserialize_from_base64(serialized)
     print(f"\n{obj}")
     assert obj == FILES
+
+
+@pytest.mark.parametrize(
+    ("dir_", "expected"),
+    (
+        (".venv", True),
+        ("/.venv", True),
+        ("./noo", False),
+        ("./.no.no..", False),
+        ("./noo/oooo", False),
+        ("./oo/nooo", False),
+        ("./oo/venv/.gitter", False),
+        ("./oo/venv/.git/bla/blub", True),
+        ("./.venv/.git/bla/blub", True),
+    ),
+)
+def test_filter_lks(dir_, expected):
+    excludes = (".venv", ".git", "no")
+    assert filter_path(Path(dir_), excludes) is expected
+
+    # assert any(part for part in Path(dir_).parts if part in excludes)

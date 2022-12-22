@@ -1,9 +1,13 @@
 import base64
+import logging
 import pickle
 import textwrap
-from typing import Any
+from pathlib import Path
+from typing import Any, Iterable
 
 """ Functions which cannot be used on CLI """
+
+_log = logging.getLogger(__name__)
 
 
 def serialize_to_base64(obj: Any | list, line_length=80) -> str:
@@ -24,3 +28,11 @@ def deserialize_from_base64(base64_str: str) -> Any:
     # Deserialize the bytes object to a Python object using pickle
     obj = pickle.loads(decoded)
     return obj
+
+
+def filter_path(path: Path, excludes: Iterable[str]) -> bool:
+    for part in Path(path).parts:
+        if part in excludes:
+            _log.debug(f"Excluding {path} due to {part}")
+            return True
+    return False

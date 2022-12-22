@@ -26,6 +26,10 @@ test-proj-xxx:  ## test-proj-xxx: create ~/xxx/test_proj to test installed confg
 links:  test-proj-xxx ## links
 	pushd ~/xxx/test_proj && CONFGUARD_PATH=/tmp/confguard confguard -v guard .
 
+.PHONY: view-links
+view-links:  ## view-links
+	find tests/resources/*_proj -ls
+
 ################################################################################
 # Building, Deploying \
 BUILDING:  ## ############################################################
