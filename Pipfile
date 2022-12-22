@@ -1,0 +1,35 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[requires]
+python_version = "3.11"
+
+[packages]
+typer = "*"
+appdirs = "*"
+pydantic = "*"
+twlib = {editable = true, path = "."}
+python-dateutil = "*"
+pytz = "*"
+pillow = "*"
+pillow-heif = "*"
+
+[dev-packages]
+black = "*"
+coverage = "*"
+build = "*"
+bump2version = "*"
+flake8 = "*"
+flake8-bugbear = "*"
+ipython = "*"
+isort = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+#pytest-freezegun = "*"  # time freezer
+scriv = "*"
+#sphinx = "*"
+#sphinx-rtd-theme = "*"
